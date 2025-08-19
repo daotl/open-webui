@@ -30,12 +30,12 @@ services:
       - 8080
     environment:
       - 'OLLAMA_BASE_URL=http://ollama:11434'
-      - 'WEBUI_SECRET_KEY='
+      - 'WEBUI_SECRET_KEY=Ej@Jc_93926336'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
     labels:
-      caddy: owu.example.com
+      caddy: owu.internetapi.cn
       caddy.reverse_proxy: "{{upstreams http 8080}}"
 
 networks:
