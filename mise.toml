@@ -1,0 +1,12 @@
+[tools]
+node = "22"
+python = "3.11"
+uv = "latest"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+_.path = ["/opt/homebrew/opt/mariadb-connector-c/bin"]
+UV_INDEX_URL = "https://mirrors.aliyun.com/pypi/simple/"
+
+[hooks]
+enter = "corepack enable"
