@@ -23,9 +23,18 @@ ARG BUILD_HASH=dev-build
 ARG UID=0
 ARG GID=0
 
+# Optional mirror URLs for faster builds in restricted networks
+# e.g. --build-arg="NPM_REGISTRY=https://registry.npmmirror.com"
+# e.g. --build-arg="PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple/"
+# e.g. --build-arg="APT_MIRROR=https://mirrors.aliyun.com"
+ARG NPM_REGISTRY=""
+ARG PIP_MIRROR=""
+ARG APT_MIRROR=""
+
 ######## WebUI frontend ########
 FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
 ARG BUILD_HASH
+ARG NPM_REGISTRY
 
 # Set Node.js options (heap limit Allocation failed - JavaScript heap out of memory)
 # ENV NODE_OPTIONS="--max-old-space-size=4096"
@@ -35,12 +44,12 @@ WORKDIR /app
 # to store git revision in build
 RUN apk add --no-cache git
 
-COPY package.json package-lock.json ./
-RUN npm ci --force
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable pnpm && pnpm install --frozen-lockfile ${NPM_REGISTRY:+--registry $NPM_REGISTRY}
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH}
-RUN npm run build
+RUN pnpm run build
 
 ######## WebUI backend ########
 FROM python:3.11.14-slim-bookworm AS base
@@ -58,7 +67,11 @@ ARG UID
 ARG GID
 
 # Python settings
-ENV PYTHONUNBUFFERED=1
+ARG PIP_MIRROR
+ENV PYTHONUNBUFFERED=1 \
+    PIP_INDEX_URL=${PIP_MIRROR} \
+    PIP_EXTRA_INDEX_URL=${PIP_MIRROR} \
+    UV_INDEX_URL=${PIP_MIRROR}
 
 ## Basis ##
 ENV ENV=prod \
@@ -124,7 +137,11 @@ RUN echo -n 00000000-0000-0000-0000-000000000000 > $HOME/.cache/chroma/telemetry
 RUN chown -R $UID:$GID /app $HOME
 
 # Install common system dependencies
-RUN apt-get update && \
+ARG APT_MIRROR
+RUN if [ -n "$APT_MIRROR" ]; then \
+    sed -i "s|http://deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources; \
+    fi && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
     git build-essential pandoc gcc netcat-openbsd curl jq \
     libmariadb-dev \
@@ -135,28 +152,30 @@ RUN apt-get update && \
 # install python dependencies
 COPY --chown=$UID:$GID ./backend/requirements.txt ./requirements.txt
 
-RUN pip3 install --no-cache-dir uv && \
+RUN set -e && \
+    pip3 install --no-cache-dir uv && \
+    if [ -z "$PIP_MIRROR" ]; then TORCH_CUDA_INDEX="--index-url https://download.pytorch.org/whl/$USE_CUDA_DOCKER_VER"; TORCH_CPU_INDEX="--index-url https://download.pytorch.org/whl/cpu"; fi && \
     if [ "$USE_CUDA" = "true" ]; then \
     # If you use CUDA the whisper and embedding model will be downloaded on first use
     # fix: pin torch<=2.9.1 - torch 2.10.0 aarch64 wheels cause SIGILL on ARM devices (RPi 4 Cortex-A72) #21349
-    pip3 install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/$USE_CUDA_DOCKER_VER --no-cache-dir && \
+    pip3 install 'torch<=2.9.1' torchvision torchaudio $TORCH_CUDA_INDEX --no-cache-dir && \
     uv pip install --system -r requirements.txt --no-cache-dir && \
     python -c "import os; from sentence_transformers import SentenceTransformer; SentenceTransformer(os.environ['RAG_EMBEDDING_MODEL'], device='cpu')" && \
     python -c "import os; from sentence_transformers import SentenceTransformer; SentenceTransformer(os.environ.get('AUXILIARY_EMBEDDING_MODEL', 'TaylorAI/bge-micro-v2'), device='cpu')" && \
-    python -c "import os; from faster_whisper import WhisperModel; WhisperModel(os.environ['WHISPER_MODEL'], device='cpu', compute_type='int8', download_root=os.environ['WHISPER_MODEL_DIR'])"; \
-    python -c "import os; import tiktoken; tiktoken.get_encoding(os.environ['TIKTOKEN_ENCODING_NAME'])"; \
+    python -c "import os; from faster_whisper import WhisperModel; WhisperModel(os.environ['WHISPER_MODEL'], device='cpu', compute_type='int8', download_root=os.environ['WHISPER_MODEL_DIR'])" && \
+    python -c "import os; import tiktoken; tiktoken.get_encoding(os.environ['TIKTOKEN_ENCODING_NAME'])" && \
     python -c "import nltk; nltk.download('punkt_tab')"; \
     else \
-    pip3 install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir && \
+    pip3 install 'torch<=2.9.1' torchvision torchaudio $TORCH_CPU_INDEX --no-cache-dir && \
     uv pip install --system -r requirements.txt --no-cache-dir && \
     if [ "$USE_SLIM" != "true" ]; then \
     python -c "import os; from sentence_transformers import SentenceTransformer; SentenceTransformer(os.environ['RAG_EMBEDDING_MODEL'], device='cpu')" && \
     python -c "import os; from sentence_transformers import SentenceTransformer; SentenceTransformer(os.environ.get('AUXILIARY_EMBEDDING_MODEL', 'TaylorAI/bge-micro-v2'), device='cpu')" && \
-    python -c "import os; from faster_whisper import WhisperModel; WhisperModel(os.environ['WHISPER_MODEL'], device='cpu', compute_type='int8', download_root=os.environ['WHISPER_MODEL_DIR'])"; \
-    python -c "import os; import tiktoken; tiktoken.get_encoding(os.environ['TIKTOKEN_ENCODING_NAME'])"; \
+    python -c "import os; from faster_whisper import WhisperModel; WhisperModel(os.environ['WHISPER_MODEL'], device='cpu', compute_type='int8', download_root=os.environ['WHISPER_MODEL_DIR'])" && \
+    python -c "import os; import tiktoken; tiktoken.get_encoding(os.environ['TIKTOKEN_ENCODING_NAME'])" && \
     python -c "import nltk; nltk.download('punkt_tab')"; \
     fi; \
-    fi; \
+    fi && \
     mkdir -p /app/backend/data && chown -R $UID:$GID /app/backend/data/ && \
     rm -rf /var/lib/apt/lists/*;
 

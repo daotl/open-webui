@@ -10,11 +10,15 @@ services:
     image: ollama/ollama:${OLLAMA_DOCKER_TAG-latest}
 
   open-webui:
-    #build:
-    #  context: .
-    #  args:
-    #    OLLAMA_BASE_URL: '/ollama'
-    #  dockerfile: Dockerfile
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   args:
+    #     OLLAMA_BASE_URL: '/ollama'
+    #     NPM_REGISTRY: ${NPM_REGISTRY-}
+    #     PIP_MIRROR: ${PIP_MIRROR-}
+    #     APT_MIRROR: ${APT_MIRROR-}
+    #     USE_SLIM: ${USE_SLIM-false}
     image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}
     container_name: open-webui
     volumes:
