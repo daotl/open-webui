@@ -21,6 +21,8 @@ services:
     #     USE_SLIM: ${USE_SLIM-false}
     image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}
     container_name: open-webui
+    depends_on:
+      - postgres
     volumes:
       - open-webui:/app/backend/data
     #depends_on:
@@ -33,8 +35,9 @@ services:
     expose:
       - 8080
     environment:
-      - 'OLLAMA_BASE_URL=http://ollama:11434'
-      - 'WEBUI_SECRET_KEY='
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/owu
+      # OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_SECRET_KEY:
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -42,20 +45,46 @@ services:
       caddy: owu.example.com
       caddy.reverse_proxy: "{{upstreams http 8080}}"
 
+  postgres:
+    image: postgres:${POSTGRES_VERSION}
+    # command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      timeout: 10s
+      retries: 5
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      # - ./postgres.conf:/etc/postgresql/postgresql.conf
+      - postgres:/var/lib/postgresql
+    # ports:
+    #   - "5432:5432"
+    expose:
+      - 5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
 networks:
   web:
     external: true
 
 volumes:
-  ollama:
-    driver: local
-    driver_opts:
-      type: none
-      device: ${VOLUMES_ROOT}/ollama
-      o: bind
   open-webui:
     driver: local
     driver_opts:
       type: none
       device: ${VOLUMES_ROOT}/data
+      o: bind
+  postgres:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${VOLUMES_ROOT}/postgres
+      o: bind
+  ollama:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${VOLUMES_ROOT}/ollama
       o: bind
