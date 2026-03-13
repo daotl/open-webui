@@ -38,6 +38,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/owu
       # OLLAMA_BASE_URL: http://ollama:11434
       WEBUI_SECRET_KEY:
+      # WEBUI_NAME: ""
+      # DEFAULT_LOCALE: zh-CN
+      # HF_ENDPOINT: https://hf-mirror.com
       # Qdrant
       VECTOR_DB: qdrant
       QDRANT_URI: http://qdrant:6333/
