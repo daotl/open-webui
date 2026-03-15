@@ -79,7 +79,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:${QDRANT_VERSION}
-    restart: unless-stoppeds
+    restart: unless-stopped
     container_name: owu-qdrant
     # ports:
     #  - 6333:6333
