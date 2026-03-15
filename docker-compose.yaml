@@ -38,6 +38,18 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/owu
       # OLLAMA_BASE_URL: http://ollama:11434
       WEBUI_SECRET_KEY:
+      # Qdrant
+      VECTOR_DB: qdrant
+      QDRANT_URI: http://qdrant:6333/
+      # QDRANT_API_KEY:
+      # Enable the usage of memmap(also known as on-disk) storage
+      QDRANT_ON_DISK: 
+      # QDRANT_PREFER_GRPC: false
+      # QDRANT_GRPC_PORT: 6334
+      # QDRANT_TIMEOUT: 5
+      # QDRANT_HNSW_M: 16
+      # ENABLE_QDRANT_MULTITENANCY_MODE: true
+      # QDRANT_COLLECTION_PREFIX: open-webui
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -65,6 +77,28 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
+  qdrant:
+    image: qdrant/qdrant:${QDRANT_VERSION}
+    restart: unless-stoppeds
+    container_name: owu-qdrant
+    # ports:
+    #  - 6333:6333
+    #  - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
+
 networks:
   web:
     external: true
@@ -81,6 +115,12 @@ volumes:
     driver_opts:
       type: none
       device: ${VOLUMES_ROOT}/postgres
+      o: bind
+  qdrant_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${VOLUMES_ROOT}/qdrant/data
       o: bind
   ollama:
     driver: local
