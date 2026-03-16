@@ -1,0 +1,12 @@
+services:
+  open-webui:
+    profiles: ['disabled']
+
+  postgres:
+    ports:
+      - 5432:5432
+
+  qdrant:
+    ports:
+      - 6333:6333
+      - 6334:6334
