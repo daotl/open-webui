@@ -46,13 +46,16 @@ services:
       QDRANT_URI: http://qdrant:6333/
       # QDRANT_API_KEY:
       # Enable the usage of memmap(also known as on-disk) storage
-      QDRANT_ON_DISK: true
+      QDRANT_ON_DISK: "true"
       # QDRANT_PREFER_GRPC: false
       # QDRANT_GRPC_PORT: 6334
       # QDRANT_TIMEOUT: 5
       # QDRANT_HNSW_M: 16
       # ENABLE_QDRANT_MULTITENANCY_MODE: true
       # QDRANT_COLLECTION_PREFIX: open-webui
+      # Responses API stateful sessions allowing compatible backends to store responses server-side
+      # with previous_response_id anchoring for improved multi-turn conversations.
+      ENABLE_RESPONSES_API_STATEFUL: "true"
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
