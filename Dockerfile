@@ -27,19 +27,35 @@ ARG GID=0
 # e.g. --build-arg="NPM_REGISTRY=https://registry.npmmirror.com"
 # e.g. --build-arg="PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple/"
 # e.g. --build-arg="APT_MIRROR=https://mirrors.aliyun.com"
+# e.g. --build-arg="PYODIDE_PYPI_INDEX_URL=https://mirrors.aliyun.com/pypi/simple"
+# e.g. --build-arg="PYODIDE_PYPI_API_URL=https://mirrors.aliyun.com/pypi"
+# e.g. --build-arg="PYODIDE_PYPI_FILES_BASE_URL=https://mirrors.aliyun.com/pypi/packages"
+# e.g. --build-arg="PYODIDE_INDEX_URL=https://mirrors.aliyun.com/pyodide/v0.28.3/full"
 ARG NPM_REGISTRY=""
 ARG PIP_MIRROR=""
 ARG APT_MIRROR=""
+ARG PYODIDE_INDEX_URL=""
+ARG PYODIDE_PYPI_INDEX_URL=""
+ARG PYODIDE_PYPI_API_URL=""
+ARG PYODIDE_PYPI_FILES_BASE_URL=""
 
 ######## WebUI frontend ########
 FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
 ARG BUILD_HASH
 ARG NPM_REGISTRY
+ARG PYODIDE_INDEX_URL
+ARG PYODIDE_PYPI_INDEX_URL
+ARG PYODIDE_PYPI_API_URL
+ARG PYODIDE_PYPI_FILES_BASE_URL
 
 # Set Node.js options (heap limit Allocation failed - JavaScript heap out of memory)
 # ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 WORKDIR /app
+ENV PYODIDE_INDEX_URL=${PYODIDE_INDEX_URL}
+ENV PYODIDE_PYPI_INDEX_URL=${PYODIDE_PYPI_INDEX_URL}
+ENV PYODIDE_PYPI_API_URL=${PYODIDE_PYPI_API_URL}
+ENV PYODIDE_PYPI_FILES_BASE_URL=${PYODIDE_PYPI_FILES_BASE_URL}
 
 # to store git revision in build
 RUN apk add --no-cache git

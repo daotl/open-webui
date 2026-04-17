@@ -1,0 +1,11 @@
+services:
+  open-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        OLLAMA_BASE_URL: '/ollama'
+        NPM_REGISTRY: ${NPM_REGISTRY-}
+        PIP_MIRROR: ${PIP_MIRROR-}
+        APT_MIRROR: ${APT_MIRROR-}
+        USE_SLIM: ${USE_SLIM-false}

@@ -27,6 +27,12 @@ const pypiPackages = ['black', 'pathspec', 'mypy_extensions'];
 import { loadPyodide } from 'pyodide';
 import { setGlobalDispatcher, ProxyAgent } from 'undici';
 import { writeFile, readFile, copyFile, readdir, rmdir, access } from 'fs/promises';
+import {
+	getPyPIIndexUrls,
+	resolvePyodideIndexURL,
+	resolvePyPIMetadataUrl,
+	resolvePyPIWheelUrl
+} from './lib/pyodide-mirror.js';
 
 /**
  * Loading network proxy configurations from the environment variables.
@@ -64,6 +70,7 @@ async function downloadPackages() {
 	let pyodide;
 	try {
 		pyodide = await loadPyodide({
+			indexURL: resolvePyodideIndexURL(),
 			packageCacheDir: 'static/pyodide'
 		});
 	} catch (err) {
