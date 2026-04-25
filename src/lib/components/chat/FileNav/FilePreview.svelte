@@ -48,8 +48,10 @@
 	export let saving = false;
 	let editTextarea: HTMLTextAreaElement;
 
-	// Reset edit state when switching files
-	$: (selectedFile, resetEdit());
+	// Reset edit state when switching files.
+	$: if (selectedFile !== undefined) {
+		resetEdit();
+	}
 
 	const resetEdit = () => {
 		editing = false;
@@ -116,7 +118,7 @@
 			: '';
 
 	let markdownEl: HTMLDivElement;
-	let mermaidInstance: any = null;
+	let mermaidInstance: unknown = null;
 
 	const renderMermaidBlocks = async (el: HTMLDivElement) => {
 		if (!el) return;
@@ -249,7 +251,9 @@
 	}
 
 	export let showRaw = false;
-	$: (selectedFile, (showRaw = false)); // reset to preview mode when switching files
+	$: if (selectedFile !== undefined) {
+		showRaw = false;
+	}
 
 	// Auto-switch to raw/editor mode for empty previewable files so the user
 	// can start editing immediately instead of seeing a blank preview.
@@ -347,6 +351,8 @@
 					class="flex items-center justify-center gap-3 py-2 px-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500"
 				>
 					<button
+						type="button"
+						aria-label="Previous slide"
 						class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30"
 						disabled={currentSlide === 0}
 						on:click={() => {
@@ -369,6 +375,8 @@
 					</button>
 					<span>{currentSlide + 1} / {fileOfficeSlides.length}</span>
 					<button
+						type="button"
+						aria-label="Next slide"
 						class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30"
 						disabled={currentSlide === fileOfficeSlides.length - 1}
 						on:click={() => {
@@ -405,7 +413,7 @@
 					: ''}"
 				class="w-full h-full border-none bg-white"
 				title="HTML Preview"
-			/>
+			></iframe>
 		{:else if isHtml && !showRaw}
 			{#if overlay}
 				<div class="absolute top-0 left-0 right-0 bottom-0 z-10"></div>
@@ -417,7 +425,7 @@
 					: ''}{($settings?.iframeSandboxAllowSameOrigin ?? false) ? ' allow-same-origin' : ''}"
 				class="w-full h-full border-none bg-white"
 				title="HTML Preview"
-			/>
+			></iframe>
 		{:else if isHtml && showRaw}
 			<div class="absolute inset-0">
 				<FileCodeEditor
@@ -507,7 +515,7 @@
 				bind:value={editContent}
 				class="w-full h-full text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre break-all leading-relaxed p-3 bg-transparent border-none outline-none resize-none"
 				spellcheck="false"
-			/>
+			></textarea>
 		{:else}
 			<pre
 				class="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-all leading-relaxed p-3">{fileContent}</pre>
